@@ -22,7 +22,7 @@ def validate_isbn(isbn):
 
     if len(isbn) != 13:
         return False
-    
+
     if not isbn.isdigit():
         return False
 
@@ -42,5 +42,5 @@ def validate_isbn(isbn):
 
     if check_digit != digits[12]:
         return False
-    
+
     return isbn

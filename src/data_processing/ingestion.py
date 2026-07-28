@@ -63,7 +63,7 @@ def load_json(filepath):
 
     try:
         logger.info(f"Loading JSON from {filepath}")
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             data = json.load(f)
 
         df = pd.json_normalize(data)
@@ -80,7 +80,7 @@ def load_json(filepath):
 
     return pd.read_csv(filepath)
 
-    with open(filepath, 'r') as f:
+    with open(filepath, "r") as f:
         data = json.load(f)
     return pd.json_normalize(data)
 
