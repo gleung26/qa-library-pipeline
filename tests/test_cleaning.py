@@ -1,26 +1,156 @@
-"""Tests for cleaning.py.
+"""Tests for data cleaning functions.
 
-TODO: Implement these tests once remove_duplicates, handle_missing_values,
-and standardise_dates are implemented in src/data_processing/cleaning.py.
+This module demonstrates proper testing patterns for Pandas code.
 """
 
+import pytest
+import pandas as pd
+import pandas.testing as pdt
 from data_processing.cleaning import (
     remove_duplicates,
     handle_missing_values,
-    standardise_dates,
+    standardise_dates
 )
+from pandas.api.types import is_datetime64_any_dtype
 
+# ========================================
+# FIXTURES - Reusable test data
+# ========================================
 
-def test_remove_duplicates():
-    """Test remove_duplicates()."""
-    pass
+@pytest.fixture
+def sample_df_with_duplicates():
+    """Sample DataFrame with duplicate rows."""
+    return pd.DataFrame({
+        'id': [1, 2, 2, 3, 3, 3],
+        'name': ['Alice', 'Bob', 'Bob', 'Charlie', 'Charlie', 'Charlie'],
+        'value': [10, 20, 20, 30, 30, 30]
+    })
 
+@pytest.fixture
+def sample_df_with_missing():
+    """Sample DataFrame with missing values."""
+    return pd.DataFrame({
+        'id': [1, 2, 3, 4],
+        'name': ['Alice', None, 'Charlie', 'David'],
+        'value': [10, 20, None, 40]
+    })
 
-def test_handle_missing_values():
-    """Test handle_missing_values()."""
-    pass
+# ========================================
+# TESTS FOR remove_duplicates()
+# ========================================
 
+def test_remove_duplicates_exact(sample_df_with_duplicates):
+    """Test duplicate removal using exact DataFrame comparison."""
+    result = remove_duplicates(sample_df_with_duplicates, subset=['id'])
+
+    expected = pd.DataFrame({
+        'id': [1, 2, 3],
+        'name': ['Alice', 'Bob', 'Charlie'],
+        'value': [10, 20, 30]
+    })
+
+    # Reset index for comparison
+    result = result.reset_index(drop=True)
+
+    pdt.assert_frame_equal(result, expected)
+
+def test_remove_duplicates_properties(sample_df_with_duplicates):
+    """Test duplicate removal using property assertions."""
+    result = remove_duplicates(sample_df_with_duplicates, subset=['id'])
+
+    # Test properties instead of exact values
+    assert len(result) == 3
+    assert result['id'].is_unique
+    assert set(result['id']) == {1, 2, 3}
+
+def test_remove_duplicates_no_changes():
+    """Test with DataFrame that has no duplicates."""
+    df_unique = pd.DataFrame({
+        'id': [1, 2, 3],
+        'name': ['A', 'B', 'C']
+    })
+
+    result = remove_duplicates(df_unique, subset=['id'])
+
+    pdt.assert_frame_equal(result, df_unique)
+
+def test_remove_duplicates_empty():
+    """Test with empty DataFrame."""
+    empty_df = pd.DataFrame({'id': [], 'name': []})
+    result = remove_duplicates(empty_df)
+
+    assert len(result) == 0
+    pdt.assert_frame_equal(result, empty_df)
+
+# ========================================
+# TESTS FOR handle_missing_values()
+# ========================================
+
+def test_handle_missing_drop(sample_df_with_missing):
+    """Test dropping rows with missing values."""
+    result = handle_missing_values(sample_df_with_missing, strategy='drop')
+
+    # Should only have rows without any NaN
+    assert len(result) == 2
+    assert result['name'].notna().all()
+    assert result['value'].notna().all()
+
+def test_handle_missing_fill(sample_df_with_missing):
+    """Test filling missing values."""
+    result = handle_missing_values(
+        sample_df_with_missing, 
+        strategy='fill', 
+        fill_value=0
+    )
+
+    # Should have all 4 rows
+    assert len(result) == 4
+    # No missing values
+    assert result['name'].notna().all() or (result['name'] == 0).any()
+    assert result['value'].notna().all()
+
+def test_handle_missing_invalid_strategy(sample_df_with_missing):
+    """Test that invalid strategy raises error."""
+    with pytest.raises(ValueError, match="Unknown strategy"):
+        handle_missing_values(sample_df_with_missing, strategy='invalid')
+
+@pytest.fixture
+def sample_with_duplicates():
+    return pd.DataFrame({
+        'id': [1, 2, 2, 3],
+        'name': ['Alice', 'Bob', 'Bob', 'Charlie']
+    })
+
+@pytest.fixture
+def sample_with_missing():
+    return pd.DataFrame({
+        'id': [1, 2, 3],
+        'name': ['Alice', None, 'Charlie'],
+        'value': [10, None, 30]
+    })
+
+def test_remove_duplicates_reduces_rows(sample_with_duplicates):
+    result = remove_duplicates(sample_with_duplicates, subset=['id'])
+    # TODO: assert result has 3 rows
+    assert len(result) == 3
+
+def test_remove_duplicates_ids_are_unique(sample_with_duplicates):
+    result = remove_duplicates(sample_with_duplicates, subset=['id'])
+    # TODO: assert that id values are unique
+    assert result ['id'].is_unique
+
+def test_handle_missing_drop(sample_with_missing):
+    result = handle_missing_values(sample_with_missing, strategy='drop')
+    # TODO: assert result has no missing values
+    assert not result.isnull().values.any()
+
+def test_handle_missing_fill(sample_with_missing):
+    result = handle_missing_values(sample_with_missing, strategy='fill', fill_value=0)
+    # TODO: assert result has 3 rows
+    assert len(result) == 3
 
 def test_standardise_dates():
-    """Test standardise_dates()."""
-    pass
+    df = pd.DataFrame({'date': ['2024-01-01', '2024-06-15']})
+    result = standardise_dates(df, date_columns=['date'])
+    # TODO: assert the date column is datetime type
+    assert is_datetime64_any_dtype(result['date']), f"Column 'date' is not datetime type."

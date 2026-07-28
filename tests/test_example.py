@@ -21,3 +21,6 @@ def test_example(sample_df):
     assert len(sample_df) == 3
     assert 'id' in sample_df.columns
     assert sample_df['id'].is_unique
+
+def test_dummy():
+    assert 1 == 1
