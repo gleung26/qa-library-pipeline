@@ -2,7 +2,7 @@
 ## Diagram
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph Raw["Raw Data"]
         
         Circulation[Circulation system]
